@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flex Success — Dosage Calculator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#f7f6f3;--surface:#ffffff;--surface2:#f0efe9;--border:#e2e0d8;
+    --border-strong:#c8c6bc;--text:#1a1a18;--text2:#6b6a64;--text3:#9e9d97;
+    --accent:#b30200;--accent-light:#fdf0f0;--accent-mid:#d94040;
+    --high:#7c1d1d;--high-bg:#fdf2f2;--high-border:#f5c6c6;
+    --low:#1a3a6b;--low-bg:#f0f4fd;--low-border:#c6d4f5;
+    --radius:10px;--radius-sm:6px;
+  }
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5}
+  .header{text-align:center;padding:28px 24px 18px;border-bottom:1px solid var(--border)}
+  .header h1{font-size:18px;font-weight:600;margin-bottom:4px}
+  .header h2{font-size:13px;font-weight:400;color:var(--text2);margin-bottom:2px}
+  .header p{font-size:12px;color:var(--text3);margin-top:6px}
+  .tabs{display:flex;gap:3px;margin:18px auto;max-width:480px;background:var(--surface2);border-radius:var(--radius);padding:4px}
+  .tab-btn{flex:1;padding:10px 6px;background:transparent;border:none;color:var(--text2);font-family:inherit;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;border-radius:var(--radius-sm)}
+  .tab-btn:hover{background:var(--surface);color:var(--text)}
+  .tab-btn.active{background:var(--accent);color:white;font-weight:600}
+  .container{max-width:900px;margin:0 auto;padding:0 24px 32px}
+  .tab-content{display:none}.tab-content.active{display:block}
+  .compound-row,.peptide-row{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px;transition:all .2s}
+  .compound-row:hover,.peptide-row:hover{border-color:var(--border-strong);background:var(--surface2)}
+  .row-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px}
+  .row-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:white;flex-shrink:0;background:var(--accent)}
+  .remove-btn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:4px;transition:all .2s;border-radius:4px}
+  .remove-btn:hover{color:var(--accent);background:var(--accent-light)}
+  .field-group{display:grid;grid-template-columns:1fr;gap:10px}
+  @media(min-width:700px){.field-group{grid-template-columns:1.6fr 1fr 1fr 1fr 1fr}}
+  .peptide-field-group{display:grid;grid-template-columns:1fr;gap:10px}
+  @media(min-width:700px){.peptide-field-group{grid-template-columns:repeat(3,1fr)}}
+  label{display:block;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+  select,input[type="number"],input[type="text"]{width:100%;padding:8px 10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:inherit;font-size:13px;outline:none;transition:all .2s}
+  select:focus,input:focus{border-color:var(--accent);background:var(--surface2)}
+  select option{background:var(--surface);color:var(--text)}
+  .dropdown-list{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius-sm) var(--radius-sm);max-height:180px;overflow-y:auto;z-index:10;display:none;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+  .dropdown-list.active{display:block}
+  .dropdown-item{padding:8px 10px;cursor:pointer;transition:all .12s;border-bottom:1px solid var(--border);font-size:13px}
+  .dropdown-item:last-child{border-bottom:none}
+  .dropdown-item:hover{background:var(--surface2);color:var(--accent)}
+  .add-btn{width:100%;padding:10px;background:transparent;border:1.5px dashed var(--border-strong);border-radius:var(--radius);color:var(--accent);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;margin-bottom:16px}
+  .add-btn:hover{border-color:var(--accent);background:var(--accent-light)}
+  .calc-btn{width:100%;padding:11px;background:var(--accent);border:none;border-radius:var(--radius);color:white;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;margin-bottom:16px}
+  .calc-btn:hover{opacity:.9}
+  .results-section{display:none}.results-section.visible{display:block;animation:slideIn .3s ease}
+  @keyframes slideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .result-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+  .result-card:hover{border-color:var(--border-strong)}
+  .result-card h3{font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text)}
+  .result-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(min-width:700px){.result-grid{grid-template-columns:1fr 1fr 1fr}}
+  .result-item label{margin-bottom:4px}
+  .val{font-size:16px;font-weight:700;color:var(--text)}.val .unit{font-size:11px;font-weight:400;color:var(--text2);margin-left:2px}
+  .syringe-container{display:flex;align-items:center;justify-content:center;padding:12px 0;flex-wrap:wrap;gap:12px}
+  .unit-toggle{display:flex;gap:3px}
+  .unit-toggle-btn{flex:1;padding:8px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text2);font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:.03em}
+  .unit-toggle-btn:hover:not(.active){border-color:var(--border-strong);color:var(--text)}
+  .unit-toggle-btn.active{background:var(--accent);color:white;border-color:var(--accent)}
+  .pin-planner{background:var(--surface);border:1.5px solid var(--accent);border-radius:var(--radius);padding:16px;margin-top:16px}
+  .pin-planner h3{font-size:13px;font-weight:600;margin-bottom:12px;color:var(--accent)}
+  .pin-group{margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+  .pin-group:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+  .pin-group-title{font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}
+  .syringe-label{font-size:11px;color:var(--text2);text-align:center;margin-bottom:8px;font-weight:500}
+  .syringe-legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;justify-content:center}
+  .legend-item{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text2)}
+  .legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;background:var(--accent)}
+  .summary-card{background:var(--surface);border:1.5px solid var(--accent);border-radius:var(--radius);padding:16px;margin-top:16px}
+  .summary-card h3{font-size:13px;font-weight:600;margin-bottom:12px;color:var(--accent)}
+  .summary-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;flex-wrap:wrap;gap:4px}
+  .summary-row:last-child{border-bottom:none}
+  .sr-label{color:var(--text2);font-weight:500}.sr-val{font-weight:700;color:var(--text)}
+  .warning{background:var(--high-bg);border:1px solid var(--high-border);border-radius:var(--radius-sm);padding:10px;font-size:12px;color:var(--high);margin-top:8px}
+  .info-note{background:var(--low-bg);border:1px solid var(--low-border);border-radius:var(--radius-sm);padding:10px;font-size:12px;color:var(--low);margin-top:8px}
+  .footer{text-align:center;padding:18px 24px;font-size:11px;color:var(--text3);border-top:1px solid var(--border);margin-top:24px}
+  .footer a{color:var(--accent);text-decoration:none;transition:color .2s}
+  .footer a:hover{color:var(--text)}
+  .disclaimer{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-top:16px;font-size:11px;color:var(--text2);line-height:1.6}
+  .disclaimer strong{color:var(--accent);font-weight:600}
+  .print-title{display:none}
+  @media print{
+    @page{margin:12mm}
+    body{background:#fff;font-size:11px}
+    .tabs,.add-btn,.calc-btn,.remove-btn,.no-print,.dropdown-list,.compound-row,.peptide-row{display:none !important}
+    .header{border:none;padding:0 0 8px}
+    .container{padding:0;max-width:100%}
+    .print-title{display:block;text-align:center;font-size:12px;color:#444;margin-bottom:10px}
+    .result-card,.pin-planner,.summary-card{break-inside:avoid;page-break-inside:avoid;border-color:#ccc !important;box-shadow:none;margin-bottom:8px;padding:10px}
+    .syringe-container{padding:6px 0}
+    .footer{border-color:#ccc;margin-top:10px}
+    .disclaimer{margin-top:10px;border-color:#ccc}
+  }
+  /* ── Auth gate ── */
+  #auth-gate{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;z-index:1000;overflow-y:auto}
+  .auth-card{background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:32px 26px;max-width:400px;width:100%;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.06);margin:auto}
+  .auth-logo{width:200px;max-width:80%;height:auto;margin:0 auto 18px}
+  .auth-title{font-size:16px;font-weight:600;color:var(--text);margin-bottom:6px}
+  .auth-sub{font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.5}
+  #auth-forms input{width:100%;padding:11px 13px;margin-bottom:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:14px;outline:none;transition:all .2s}
+  #auth-forms input:focus{border-color:var(--accent);background:var(--surface)}
+  .auth-btn{width:100%;padding:12px;background:var(--accent);border:none;border-radius:8px;color:white;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;margin-top:4px}
+  .auth-btn:hover{opacity:.9}
+  .auth-btn:disabled{opacity:.5;cursor:not-allowed}
+  .auth-btn-ghost{background:transparent;color:var(--accent);border:1px solid var(--border)}
+  .auth-toggle{margin-top:12px;font-size:13px;color:var(--text2)}
+  .auth-toggle a{color:var(--accent);cursor:pointer;font-weight:600;text-decoration:none;margin-left:4px}
+  .auth-toggle a:hover{text-decoration:underline}
+  .auth-error{background:var(--high-bg);border:1px solid var(--high-border);color:var(--high);border-radius:8px;padding:10px;font-size:13px;margin-bottom:14px;text-align:left}
+  .auth-info{background:var(--low-bg);border:1px solid var(--low-border);color:var(--low);border-radius:8px;padding:10px;font-size:13px;margin-bottom:14px;text-align:left;line-height:1.5}
+  .auth-privacy{font-size:11px;color:var(--text3);margin-top:22px;line-height:1.6;text-align:left;border-top:1px solid var(--border);padding-top:16px}
+  .auth-privacy strong{color:var(--text2)}
+  /* signed-in bar + header logo */
+  .signed-in-bar{display:flex;align-items:center;justify-content:flex-end;gap:12px;padding:8px 24px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:12px;color:var(--text2)}
+  .signout-btn{background:transparent;border:1px solid var(--border-strong);border-radius:6px;padding:5px 12px;font-family:inherit;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .2s}
+  .signout-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .header-logo{width:180px;max-width:60%;height:auto;margin:0 auto 8px;display:block}
+  @media print{.signed-in-bar{display:none !important}}
+</style>
+</head>
+<body>
+<!-- ══════════ LOGIN GATE ══════════ -->
+<div id="auth-gate">
+  <div class="auth-card">
+    <img src="logo.png" alt="Flex Success" class="auth-logo">
+    <h2 class="auth-title">Dosage Calculator</h2>
+    <p class="auth-sub">Client access only. Sign in or create an account to continue.</p>
+
+    <div id="auth-error" class="auth-error" style="display:none"></div>
+    <div id="auth-info" class="auth-info" style="display:none"></div>
+
+    <div id="auth-forms">
+      <input type="email" id="auth-email" placeholder="Email address" autocomplete="email">
+      <input type="password" id="auth-password" placeholder="Password" autocomplete="current-password">
+      <input type="text" id="auth-name" placeholder="Your full name" autocomplete="name" style="display:none">
+
+      <button class="auth-btn" id="auth-primary-btn" onclick="doLogin()">Sign in</button>
+
+      <div class="auth-toggle">
+        <span id="auth-toggle-text">Don't have an account?</span>
+        <a id="auth-toggle-link" onclick="toggleAuthMode()">Create one</a>
+      </div>
+      <div class="auth-toggle">
+        <a id="auth-forgot-link" onclick="doReset()">Forgot password?</a>
+      </div>
+    </div>
+
+    <div id="auth-pending" style="display:none">
+      <div class="auth-info">Your account doesn't currently have access to the calculator. If you're a client and believe this is a mistake, please contact your coach at <strong>admin@flexsuccessonline.coaching</strong>.</div>
+      <button class="auth-btn auth-btn-ghost" onclick="doLogout()">Back to sign in</button>
+    </div>
+
+    <p class="auth-privacy">🔒 <strong>Privacy:</strong> We collect only your name and email to verify you're a client and manage access. We don't share your details with third parties, and you can request deletion anytime by contacting your coach. This tool is educational and not medical advice.</p>
+  </div>
+</div>
+
+<!-- ══════════ APP (hidden until authed) ══════════ -->
+<div id="app-shell" style="display:none">
+<div class="signed-in-bar no-print">
+  <span id="signed-in-email"></span>
+  <button onclick="doLogout()" class="signout-btn">Sign out</button>
+</div>
+<div class="header">
+  <img src="logo.png" alt="Flex Success" class="header-logo">
+  <h2>Dosage Calculator</h2>
+  <p>Oil-based compound & peptide reconstitution calculators · insulin syringe visualisation · smart pin planning</p>
+</div>
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('oil')">💉 Oil / Compound</button>
+  <button class="tab-btn" onclick="switchTab('peptide')">🧬 Peptide</button>
+  <button class="tab-btn" onclick="switchTab('serum')">📈 Serum Levels</button>
+</div>
+<div class="container">
+  <div id="tab-oil" class="tab-content active">
+    <div id="oil-compounds"></div>
+    <button class="add-btn" onclick="addCompound()" id="add-compound-btn">+ Add compound</button>
+    <button class="calc-btn" onclick="calculateOil()">Calculate dosages</button>
+    <div id="oil-results" class="results-section"></div>
+  </div>
+  <div id="tab-peptide" class="tab-content">
+    <div id="peptide-compounds"></div>
+    <button class="add-btn" onclick="addPeptide()" id="add-peptide-btn">+ Add peptide</button>
+    <button class="calc-btn" onclick="calculatePeptide()">Calculate reconstitution</button>
+    <div id="peptide-results" class="results-section"></div>
+  </div>
+  <div id="tab-serum" class="tab-content">
+    <div class="no-print" id="serum-controls">
+      <div class="info-note" style="margin-bottom:14px">📈 This charts estimated <strong>relative serum levels</strong> from the compounds in your <strong>Oil / Compound</strong> tab. Values are in arbitrary mg-based units for visualising accumulation, peaks and troughs — not actual blood concentrations. Half-lives are community-average estimates and are editable. Individual response varies.</div>
+      <div id="serum-halflife-panel"></div>
+      <button class="calc-btn" onclick="plotInitialExposure()">📊 Plot initial exposure</button>
+    </div>
+    <div id="serum-initial-results"></div>
+
+    <div class="no-print" id="cycle-controls" style="margin-top:24px">
+      <h3 style="font-size:14px;font-weight:600;margin-bottom:6px">🗓️ Manual Cycle Planner</h3>
+      <div class="info-note" style="margin-bottom:14px">Your Oil / Compound selections are pulled in automatically as starting blocks (week 1 onward). Each block is a <strong>total mg per week</strong> for a compound, from an <strong>introduced</strong> week to an optional <strong>removed</strong> week (leave blank to run to cycle end) — spread automatically across its injection frequency. Injectables and common <strong>oral steroids</strong> are selectable. Stack blocks on the same compound to ramp up or taper. Set one <strong>cycle final week</strong> below; the graph runs 6 weeks past it to show clearance back toward baseline.</div>
+      <div style="margin-bottom:14px"><label>Cycle final week (last dosing week)</label><input type="number" id="cycle-final-week" value="12" min="1" step="1" style="max-width:220px"></div>
+      <div id="cycle-blocks"></div>
+      <button class="add-btn" onclick="pullFromOil()" style="margin-bottom:8px">↧ Reload blocks from Oil / Compound tab</button>
+      <button class="add-btn" onclick="addCycleBlock()" id="add-cycle-btn">+ Add dose block</button>
+      <button class="calc-btn" onclick="plotManualCycle()">📊 Plot cycle</button>
+    </div>
+    <div id="serum-cycle-results"></div>
+  </div>
+  <div class="disclaimer">
+    <strong>⚠️ Disclaimer:</strong> This calculator is an educational harm-reduction tool only. It is not medical advice. Always consult a qualified healthcare professional before using any compound. Dosage calculations should be verified independently. The creators of this tool assume no responsibility for its use.
+  </div>
+</div>
+<div class="footer">
+  Flex Success Dosage Calculator · For coaching use only · Not medical advice ·
+  <a href="https://flexsuccesscoaching.online" target="_blank">flexsuccesscoaching.online</a>
+</div>
+</div><!-- /app-shell -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ══════════════════════════════════════════════════════
+// SUPABASE AUTH GATE
+// ══════════════════════════════════════════════════════
+// ↓↓↓ PASTE YOUR SUPABASE PROJECT VALUES HERE ↓↓↓
+const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+// ↑↑↑ (from Supabase → Project Settings → API) ↑↑↑
+
+// ACCESS MODE:
+//   'open'    = new signups can use the calculator immediately; admin revokes non-clients later (your Option B)
+//   'approve' = new signups are held as "pending" until an admin approves them
+const ACCESS_MODE = 'open';
+
+let sb = null, authMode = 'login';
+try {
+  if(SUPABASE_URL.startsWith('http') && SUPABASE_ANON_KEY.length > 20){
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+} catch(e){ console.error('Supabase init failed', e); }
+
+function showAuthError(msg){
+  const el = document.getElementById('auth-error');
+  el.textContent = msg; el.style.display = 'block';
+  document.getElementById('auth-info').style.display = 'none';
+}
+function showAuthInfo(msg){
+  const el = document.getElementById('auth-info');
+  el.innerHTML = msg; el.style.display = 'block';
+  document.getElementById('auth-error').style.display = 'none';
+}
+function clearAuthMsg(){
+  document.getElementById('auth-error').style.display='none';
+  document.getElementById('auth-info').style.display='none';
+}
+
+function toggleAuthMode(){
+  clearAuthMsg();
+  authMode = authMode === 'login' ? 'signup' : 'login';
+  const nameField = document.getElementById('auth-name');
+  const primaryBtn = document.getElementById('auth-primary-btn');
+  const toggleText = document.getElementById('auth-toggle-text');
+  const toggleLink = document.getElementById('auth-toggle-link');
+  const forgot = document.getElementById('auth-forgot-link');
+  if(authMode === 'signup'){
+    nameField.style.display = 'block';
+    primaryBtn.textContent = 'Create account';
+    primaryBtn.setAttribute('onclick','doSignup()');
+    toggleText.textContent = 'Already have an account?';
+    toggleLink.textContent = 'Sign in';
+    forgot.parentElement.style.display = 'none';
+  } else {
+    nameField.style.display = 'none';
+    primaryBtn.textContent = 'Sign in';
+    primaryBtn.setAttribute('onclick','doLogin()');
+    toggleText.textContent = "Don't have an account?";
+    toggleLink.textContent = 'Create one';
+    forgot.parentElement.style.display = 'block';
+  }
+}
+
+async function doSignup(){
+  clearAuthMsg();
+  if(!sb){ showAuthError('Login is not configured yet. Please contact your coach.'); return; }
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const name = document.getElementById('auth-name').value.trim();
+  if(!email || !password){ showAuthError('Enter your email and a password.'); return; }
+  if(!name){ showAuthError('Please enter your full name so we can verify you.'); return; }
+  if(password.length < 6){ showAuthError('Password must be at least 6 characters.'); return; }
+  const btn = document.getElementById('auth-primary-btn'); btn.disabled = true;
+  const startActive = (ACCESS_MODE === 'open');
+  const { data, error } = await sb.auth.signUp({
+    email, password,
+    options: { data: { full_name: name, active: startActive } }
+  });
+  btn.disabled = false;
+  if(error){ showAuthError(error.message); return; }
+  if(ACCESS_MODE === 'open'){
+    showAuthInfo("✅ Account created! You can sign in now. (Our team is notified of new signups and reviews access.)");
+  } else {
+    showAuthInfo("✅ Account created! Our team has been notified and will verify you're a client. You'll get access once approved — try signing in shortly.");
+  }
+  authMode = 'signup'; toggleAuthMode();
+}
+
+async function doLogin(){
+  clearAuthMsg();
+  if(!sb){ showAuthError('Login is not configured yet. Please contact your coach.'); return; }
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  if(!email || !password){ showAuthError('Enter your email and password.'); return; }
+  const btn = document.getElementById('auth-primary-btn'); btn.disabled = true;
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  btn.disabled = false;
+  if(error){ showAuthError(error.message); return; }
+  checkAccessAndEnter(data.user);
+}
+
+async function doReset(){
+  clearAuthMsg();
+  if(!sb){ showAuthError('Login is not configured yet. Please contact your coach.'); return; }
+  const email = document.getElementById('auth-email').value.trim();
+  if(!email){ showAuthError('Enter your email above first, then tap “Forgot password”.'); return; }
+  const { error } = await sb.auth.resetPasswordForEmail(email);
+  if(error){ showAuthError(error.message); return; }
+  showAuthInfo('📧 If that email has an account, a password reset link is on its way.');
+}
+
+async function doLogout(){
+  if(sb) await sb.auth.signOut();
+  document.getElementById('app-shell').style.display = 'none';
+  document.getElementById('auth-gate').style.display = 'flex';
+  document.getElementById('auth-pending').style.display = 'none';
+  document.getElementById('auth-forms').style.display = 'block';
+  clearAuthMsg();
+}
+
+// Access control: in 'open' mode anyone gets in unless explicitly revoked (active===false);
+// in 'approve' mode the user must be explicitly active===true.
+function checkAccessAndEnter(user){
+  if(!user){ return; }
+  const activeFlag = user.user_metadata ? user.user_metadata.active : undefined;
+  let allowed;
+  if(ACCESS_MODE === 'open'){
+    allowed = (activeFlag !== false); // blocked only if an admin revoked
+  } else {
+    allowed = (activeFlag === true);  // must be approved
+  }
+  if(allowed){
+    enterApp(user);
+  } else {
+    document.getElementById('auth-forms').style.display = 'none';
+    document.getElementById('auth-pending').style.display = 'block';
+    clearAuthMsg();
+  }
+}
+
+function enterApp(user){
+  document.getElementById('auth-gate').style.display = 'none';
+  document.getElementById('app-shell').style.display = 'block';
+  const email = user.email || '';
+  const name = (user.user_metadata && user.user_metadata.full_name) || '';
+  document.getElementById('signed-in-email').textContent = name ? `${name} · ${email}` : email;
+}
+
+// On load: if already signed in and active, go straight in
+async function initAuth(){
+  if(!sb){
+    // No Supabase configured yet — let the calculator run open (dev mode)
+    document.getElementById('auth-gate').style.display = 'none';
+    document.getElementById('app-shell').style.display = 'block';
+    return;
+  }
+  const { data } = await sb.auth.getSession();
+  if(data && data.session && data.session.user){
+    checkAccessAndEnter(data.session.user);
+  }
+}
+window.addEventListener('DOMContentLoaded', initAuth);
+
+// allow Enter key to submit
+document.addEventListener('keydown', (e)=>{
+  if(e.key==='Enter' && document.getElementById('auth-gate').style.display!=='none'){
+    if(authMode==='signup') doSignup(); else doLogin();
+  }
+});
+
+const compounds = [
+  {name:"Testosterone Enanthate",g:"Testosterone",dc:250,hl:4.5},
+  {name:"Testosterone Cypionate",g:"Testosterone",dc:200,hl:5},
+  {name:"Testosterone Propionate",g:"Testosterone",dc:100,hl:0.8},
+  {name:"Testosterone Undecanoate",g:"Testosterone",dc:250,hl:20},
+  {name:"Testosterone Suspension (no ester)",g:"Testosterone",dc:100,hl:0.5},
+  {name:"Testosterone Phenylpropionate",g:"Testosterone",dc:100,hl:1.5},
+  {name:"Testosterone Isocaproate",g:"Testosterone",dc:100,hl:4},
+  {name:"Testosterone Decanoate",g:"Testosterone",dc:100,hl:7.5},
+  {name:"Testosterone Acetate",g:"Testosterone",dc:100,hl:1},
+  {name:"Testosterone Base (TNE)",g:"Testosterone",dc:100,hl:0.5},
+  {name:"Sustanon 250 (blend)",g:"Testosterone",dc:250,hl:7},
+  {name:"Nandrolone Decanoate (Deca)",g:"Nandrolone",dc:250,hl:7},
+  {name:"Nandrolone Phenylpropionate (NPP)",g:"Nandrolone",dc:100,hl:2.5},
+  {name:"Trenbolone Acetate",g:"Trenbolone",dc:100,hl:1},
+  {name:"Trenbolone Enanthate",g:"Trenbolone",dc:200,hl:5},
+  {name:"Trenbolone Hexahydrobenzylcarbonate (Parabolan)",g:"Trenbolone",dc:76,hl:8},
+  {name:"Boldenone Undecylenate (Equipoise)",g:"Boldenone",dc:300,hl:14},
+  {name:"Boldenone Cypionate",g:"Boldenone",dc:200,hl:5},
+  {name:"Boldenone Acetate",g:"Boldenone",dc:100,hl:1},
+  {name:"Drostanolone Propionate (Masteron P)",g:"Drostanolone",dc:100,hl:1},
+  {name:"Drostanolone Enanthate (Masteron E)",g:"Drostanolone",dc:200,hl:5},
+  {name:"Methenolone Enanthate (Primobolan)",g:"Methenolone",dc:100,hl:5},
+  {name:"Methenolone Acetate (Primo Ace)",g:"Methenolone",dc:100,hl:1},
+  {name:"Stanozolol Suspension (Winstrol)",g:"Stanozolol",dc:50,hl:1},
+  {name:"Dihydroboldenone Cypionate (DHB/1-Test Cyp)",g:"DHB",dc:100,hl:5},
+  {name:"Trestolone Acetate (MENT)",g:"Trestolone",dc:50,hl:0.5},
+  {name:"Trestolone Decanoate (MENT Deca)",g:"Trestolone",dc:100,hl:7},
+];
+
+// Common oral steroids (half-life in days). Used in the Serum cycle planner dropdown.
+const orals = [
+  {name:"Dianabol (Methandrostenolone)",g:"Oral",dc:null,hl:0.2},
+  {name:"Anadrol (Oxymetholone)",g:"Oral",dc:null,hl:0.6},
+  {name:"Winstrol (Stanozolol, oral)",g:"Oral",dc:null,hl:0.375},
+  {name:"Anavar (Oxandrolone)",g:"Oral",dc:null,hl:0.4},
+  {name:"Turinabol (Oral Tbol)",g:"Oral",dc:null,hl:0.67},
+  {name:"Halotestin (Fluoxymesterone)",g:"Oral",dc:null,hl:0.4},
+  {name:"Superdrol (Methasterone)",g:"Oral",dc:null,hl:0.35},
+  {name:"Proviron (Mesterolone)",g:"Oral",dc:null,hl:0.5},
+  {name:"Primobolan (Methenolone Acetate, oral)",g:"Oral",dc:null,hl:0.25},
+  {name:"Methyltestosterone",g:"Oral",dc:null,hl:0.15},
+  {name:"Methyl-1-Testosterone (M1T)",g:"Oral",dc:null,hl:0.4},
+  {name:"Cheque Drops (Mibolerone)",g:"Oral",dc:null,hl:0.2},
+];
+
+// Combined lookup for the serum planner (injectables + orals)
+const COMPOUND_LOOKUP = compounds.concat(orals);
+
+const freqOpts = [
+  {label:"Daily",t:7},
+  {label:"2x per week",t:2},
+  {label:"3x per week",t:3},
+  {label:"4x per week",t:4},
+  {label:"5x per week",t:5},
+  {label:"6x per week",t:6},
+  {label:"Every 2nd day",t:3.5},
+  {label:"Every 7 days",t:1},
+];
+
+const peptideNames = [
+  "BPC-157","TB-500 (Thymosin Beta-4)","Semaglutide","Tirzepatide","Retatrutide",
+  "HGH (Human Growth Hormone)","CJC-1295 (no DAC)","CJC-1295 + DAC","Ipamorelin",
+  "GHRP-2","GHRP-6","Sermorelin","Tesamorelin","GHK-Cu","PT-141 (Bremelanotide)",
+  "Selank","Semax","AOD-9604","MOTS-c","Epithalon","HGH Fragment 176-191",
+  "Kisspeptin-10","DSIP","Thymosin Alpha-1","IGF-1 LR3","Melanotan II","NAD+"
+].map(n=>({name:n}));
+
+// Per-compound colours for the pin planner (solid + translucent fill versions)
+const PIN_COLORS = ['#b30200','#1a3a6b','#1d7c3a','#9e5a00','#6b1d7c'];
+const PIN_FILLS  = ['rgba(179,2,0,0.45)','rgba(26,58,107,0.45)','rgba(29,124,58,0.45)','rgba(158,90,0,0.45)','rgba(107,29,124,0.45)'];
+
+let oilCount = 0, peptideCount = 0;
+
+function createSearchableDropdown(inputId, options, onSelect){
+  const input = document.getElementById(inputId);
+  if(!input) return;
+  const wrapper = input.parentElement;
+  const dropdownId = `dropdown-${inputId}`;
+  let dropdown = document.getElementById(dropdownId);
+  if(dropdown) dropdown.remove();
+  dropdown = document.createElement('div');
+  dropdown.id = dropdownId;
+  dropdown.className = 'dropdown-list';
+  function updateDropdown(){
+    const query = input.value.toLowerCase();
+    dropdown.innerHTML = '';
+    const filtered = options.filter(opt => opt.name.toLowerCase().includes(query));
+    if(filtered.length === 0){
+      const item = document.createElement('div');
+      item.className = 'dropdown-item';
+      item.textContent = 'No matches — type a custom name';
+      item.style.cursor = 'default';
+      dropdown.appendChild(item);
+      return;
+    }
+    filtered.forEach((opt) => {
+      const item = document.createElement('div');
+      item.className = 'dropdown-item';
+      item.textContent = opt.name;
+      item.onclick = () => {
+        input.value = opt.name;
+        dropdown.classList.remove('active');
+        if(onSelect) onSelect(opt);
+      };
+      dropdown.appendChild(item);
+    });
+  }
+  input.addEventListener('focus', () => { dropdown.classList.add('active'); updateDropdown(); });
+  input.addEventListener('input', updateDropdown);
+  document.addEventListener('click', (e) => { if(!wrapper.contains(e.target)) dropdown.classList.remove('active'); });
+  wrapper.style.position = 'relative';
+  wrapper.appendChild(dropdown);
+}
+
+// ───────── OIL ─────────
+function addCompound(){
+  if(oilCount>=5)return;
+  oilCount++;
+  const n=oilCount;
+  const div=document.createElement('div');
+  div.className='compound-row';div.id=`oil-row-${n}`;
+  div.innerHTML=`
+    <div class="row-header">
+      <span class="row-num">${n}</span>
+      <button class="remove-btn" onclick="removeCompound('oil-row-${n}')" title="Remove">&times;</button>
+    </div>
+    <div class="field-group">
+      <div><label>Compound</label><input type="text" id="cmp-${n}" placeholder="Type or select…" autocomplete="off"></div>
+      <div><label>Concentration (mg/ml)</label><input type="number" id="conc-${n}" placeholder="mg/ml" min="1" max="1000"></div>
+      <div><label>Weekly target (mg)</label><input type="number" id="tgt-${n}" placeholder="mg/week" min="1" max="10000"></div>
+      <div><label>Injection frequency</label><select id="freq-${n}">${freqOpts.map((f,i)=>`<option value="${i}">${f.label}</option>`).join('')}</select></div>
+      <div><label>Vial size (ml, optional)</label><input type="number" id="vial-${n}" placeholder="e.g. 10" min="1" step="any"></div>
+    </div>`;
+  document.getElementById('oil-compounds').appendChild(div);
+  createSearchableDropdown(`cmp-${n}`, compounds, (compound) => {
+    document.getElementById(`conc-${n}`).value = compound.dc;
+  });
+  if(oilCount>=5)document.getElementById('add-compound-btn').style.display='none';
+}
+function removeCompound(id){
+  document.getElementById(id)?.remove();
+  oilCount--;renumberOil();
+  document.getElementById('add-compound-btn').style.display='';
+}
+function renumberOil(){
+  document.querySelectorAll('#oil-compounds .compound-row').forEach((r,i)=>{ r.querySelector('.row-num').textContent=i+1; });
+}
+
+function buildSyringeSVG(segments, fillColor, label, maxUnits=100){
+  const totalUnits = segments.reduce((s,x)=>s+x.units,0);
+  const clamped = Math.min(totalUnits, maxUnits);
+  const sW=280,sH=60,bX=50,bY=15,bW=180,bH=30;
+  let ticks='';
+  for(let i=0;i<=10;i++){
+    const x=bX+(bW*i/10), maj=i%5===0;
+    ticks+=`<line x1="${x}" y1="${bY}" x2="${x}" y2="${bY+(maj?8:5)}" stroke="#c8c6bc" stroke-width="${maj?.8:.5}"/>`;
+    if(maj)ticks+=`<text x="${x}" y="${bY-2}" text-anchor="middle" fill="#9e9d97" font-size="10" font-weight="500">${Math.round(maxUnits*i/10)}</text>`;
+  }
+  let fills='', cx=bX+1;
+  segments.forEach(seg=>{
+    const w = bW * Math.min(seg.units/maxUnits, 1-(cx-bX-1)/bW);
+    if(w>0){ fills+=`<rect x="${cx}" y="${bY+1}" width="${w}" height="${bH-2}" fill="${seg.color||fillColor}"/>`; cx+=w; }
+  });
+  const lastX = bX+1+bW*(clamped/maxUnits);
+  return `<svg viewBox="0 0 ${sW} ${sH+2}" xmlns="http://www.w3.org/2000/svg" style="max-width:320px;width:100%">
+    <line x1="0" y1="${bY+bH/2}" x2="${bX}" y2="${bY+bH/2}" stroke="#9e9d97" stroke-width="1"/>
+    <polygon points="${bX-1.5},${bY+bH/2-2} ${bX-1.5},${bY+bH/2+2} ${bX+.5},${bY+bH/2}" fill="#9e9d97"/>
+    <rect x="${bX}" y="${bY}" width="${bW}" height="${bH}" rx="2" fill="#ffffff" stroke="#e2e0d8" stroke-width="1"/>
+    ${fills}
+    ${clamped>0?`<line x1="${lastX}" y1="${bY}" x2="${lastX}" y2="${bY+bH}" stroke="#1a1a18" stroke-width="1" opacity="0.5"/>`:''}
+    <rect x="${bX+bW}" y="${bY+2}" width="16" height="${bH-4}" rx="1.5" fill="#f0efe9" stroke="#e2e0d8"/>
+    ${ticks}
+    <text x="${bX+bW/2}" y="${sH-2}" text-anchor="middle" fill="#b30200" font-size="9" font-weight="600">${label}</text>
+  </svg>`;
+}
+
+function fmtDuration(weeks){
+  if(!isFinite(weeks)||weeks<=0) return '—';
+  if(weeks>=1) return weeks.toFixed(1)+' wks';
+  return Math.round(weeks*7)+' days';
+}
+
+function binPack(items){
+  const sorted = [...items].sort((a,b)=>b.units-a.units);
+  const bins = [];
+  sorted.forEach(item=>{
+    let placed = false;
+    for(let b of bins){ if(b.remaining >= item.units - 0.01){ b.segments.push(item); b.remaining -= item.units; placed = true; break; } }
+    if(!placed){ bins.push({segments:[item], remaining:100-item.units}); }
+  });
+  return bins;
+}
+
+function calculateOil(){
+  const rows = document.querySelectorAll('#oil-compounds .compound-row');
+  if(!rows.length){alert('Add at least one compound.');return;}
+  const data = []; let err = false;
+  rows.forEach((row, idx)=>{
+    const cmpInput=row.querySelector('input[id^="cmp-"]');
+    const conc=row.querySelector('input[id^="conc-"]');
+    const tgt=row.querySelector('input[id^="tgt-"]');
+    const frq=row.querySelector('select[id^="freq-"]');
+    const vialEl=row.querySelector('input[id^="vial-"]');
+    if(!cmpInput.value||!conc.value||!tgt.value){err=true;return;}
+    const concentration=parseFloat(conc.value);
+    const weeklyMg=parseFloat(tgt.value);
+    const freq=freqOpts[parseInt(frq.value)];
+    const weeklyMl=weeklyMg/concentration;
+    const perDoseMl=weeklyMl/freq.t;
+    const perDoseUnits=perDoseMl*100;
+    const perDoseMg=weeklyMg/freq.t;
+    const vialMl = vialEl && vialEl.value ? parseFloat(vialEl.value) : null;
+    const weeksSupply = vialMl ? vialMl / weeklyMl : null;
+    const ci = idx % PIN_COLORS.length;
+    data.push({name:cmpInput.value, weeklyMg, weeklyMl, perDoseMl, perDoseUnits, perDoseMg, freq:freq.label, freqKey:freq.t, color:PIN_COLORS[ci], fill:PIN_FILLS[ci], vialMl, weeksSupply});
+  });
+  if(err){alert('Fill in all fields for each compound.');return;}
+  let html = '';
+  html+=`<button class="calc-btn no-print" onclick="window.print()" style="background:var(--text);margin-bottom:14px">🖨️ Print / Save as PDF</button>`;
+  html+=`<div class="print-title">Flex Success — Oil / Compound Dosage · Generated ${new Date().toLocaleDateString()}</div>`;
+  data.forEach(d=>{
+    html+=`<div class="result-card"><h3><span class="legend-dot" style="background:${d.color};margin-right:6px"></span>${d.name}</h3>
+      <div class="result-grid">
+        <div class="result-item"><label>Per injection</label><div class="val">${d.perDoseMg.toFixed(1)}<span class="unit">mg</span></div></div>
+        <div class="result-item"><label>Volume per injection</label><div class="val">${d.perDoseMl.toFixed(2)}<span class="unit">ml</span></div></div>
+        <div class="result-item"><label>Insulin syringe</label><div class="val">${d.perDoseUnits.toFixed(1)}<span class="unit">units</span></div></div>
+        <div class="result-item"><label>Weekly volume</label><div class="val">${d.weeklyMl.toFixed(2)}<span class="unit">ml</span></div></div>
+        <div class="result-item"><label>Weekly dose</label><div class="val">${d.weeklyMg}<span class="unit">mg</span></div></div>
+        <div class="result-item"><label>Frequency</label><div class="val" style="font-size:12px">${d.freq}</div></div>
+        ${d.vialMl?`<div class="result-item"><label>Vial lasts (${d.vialMl} ml)</label><div class="val">${fmtDuration(d.weeksSupply)}</div></div>`:''}
+      </div>
+      <div class="syringe-container">${buildSyringeSVG([{units:d.perDoseUnits, color:d.fill}],d.fill,d.perDoseUnits.toFixed(1)+'u · '+(d.perDoseUnits/100).toFixed(2)+'ml')}</div>
+      ${d.perDoseUnits>100?'<div class="warning">This single compound exceeds 100 units (1 ml) per injection. The pin planner below will split it across multiple syringes.</div>':''}
+    </div>`;
+  });
+  const freqGroups = {};
+  data.forEach(d=>{ if(!freqGroups[d.freqKey])freqGroups[d.freqKey]={freq:d.freq, items:[]}; freqGroups[d.freqKey].items.push(d); });
+  html+=`<div class="pin-planner"><h3>📌 Pin Planner — Combined Syringe View</h3>`;
+  Object.values(freqGroups).forEach(grp=>{
+    const items = grp.items.map(d=>({name:d.name, units:d.perDoseUnits, color:d.fill, dot:d.color}));
+    const totalUnits = items.reduce((s,x)=>s+x.units,0);
+    html+=`<div class="pin-group"><div class="pin-group-title">${grp.freq} — ${totalUnits.toFixed(1)} units total</div>`;
+    if(totalUnits <= 100){
+      html+=`<div class="syringe-label">Syringe 1 of 1</div><div class="syringe-container">${buildSyringeSVG(items.map(it=>({units:it.units, color:it.color})),'rgba(179,2,0,0.4)',totalUnits.toFixed(1)+'u · '+(totalUnits/100).toFixed(2)+'ml')}</div>`;
+    } else {
+      const bins = binPack(items.map(it=>({...it})));
+      bins.forEach((bin,bi)=>{
+        const binTotal = bin.segments.reduce((s,x)=>s+x.units,0);
+        html+=`<div class="syringe-label">Syringe ${bi+1} of ${bins.length} — ${binTotal.toFixed(1)} units</div><div class="syringe-container">${buildSyringeSVG(bin.segments.map(s=>({units:s.units, color:s.color})),'rgba(179,2,0,0.4)',binTotal.toFixed(1)+'u · '+(binTotal/100).toFixed(2)+'ml')}</div>`;
+      });
+      html+=`<div class="info-note">Total volume exceeds 1 ml — split into ${bins.length} syringes for optimal fit.</div>`;
+    }
+    html+=`<div class="syringe-legend">${items.map(it=>`<span class="legend-item"><span class="legend-dot" style="background:${it.dot}"></span>${it.name} — ${it.units.toFixed(1)}u</span>`).join('')}</div></div>`;
+  });
+  if(Object.keys(freqGroups).length > 1){ html+=`<div class="info-note" style="margin-top:12px">You have compounds at different frequencies. Each frequency group is shown separately.</div>`; }
+  html+=`</div>`;
+  const totalWeeklyMl = data.reduce((s,d)=>s+d.weeklyMl,0);
+  html+=`<div class="summary-card"><h3>📊 Weekly Summary</h3>
+    ${data.map(d=>`<div class="summary-row"><span class="sr-label">${d.name}</span><span class="sr-val">${d.weeklyMg} mg · ${d.weeklyMl.toFixed(2)} ml/wk${d.vialMl?` · ${d.vialMl}ml vial lasts ${fmtDuration(d.weeksSupply)}`:''}</span></div>`).join('')}
+    <div class="summary-row" style="border-top:1.5px solid var(--accent);margin-top:8px;padding-top:8px">
+      <span class="sr-label" style="color:var(--accent);font-weight:700">Total weekly oil volume</span>
+      <span class="sr-val" style="color:var(--accent)">${totalWeeklyMl.toFixed(2)} ml</span>
+    </div></div>`;
+  const r=document.getElementById('oil-results');
+  r.innerHTML=html;r.classList.add('visible');
+  r.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ───────── PEPTIDE ─────────
+function setRowUnit(n, unit, btn){
+  const row = document.getElementById(`peptide-row-${n}`);
+  row.querySelectorAll('.unit-toggle-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function addPeptide(){
+  if(peptideCount>=5)return;
+  peptideCount++;
+  const n=peptideCount;
+  const div=document.createElement('div');
+  div.className='peptide-row';div.id=`peptide-row-${n}`;
+  div.innerHTML=`
+    <div class="row-header">
+      <span class="row-num">${n}</span>
+      <button class="remove-btn" onclick="removePeptide('peptide-row-${n}')" title="Remove">&times;</button>
+    </div>
+    <div class="peptide-field-group">
+      <div><label>Peptide</label><input type="text" id="pep-${n}" placeholder="Type or select…" autocomplete="off"></div>
+      <div><label>Unit</label>
+        <div class="unit-toggle">
+          <button type="button" class="unit-toggle-btn active" data-u="mcg" onclick="setRowUnit(${n},'mcg',this)">mcg</button>
+          <button type="button" class="unit-toggle-btn" data-u="mg" onclick="setRowUnit(${n},'mg',this)">mg</button>
+          <button type="button" class="unit-toggle-btn" data-u="IU" onclick="setRowUnit(${n},'IU',this)">IU</button>
+        </div>
+      </div>
+      <div><label>Injection frequency</label><select id="pfreq-${n}">${freqOpts.map((f,i)=>`<option value="${i}">${f.label}</option>`).join('')}</select></div>
+      <div><label>Total per vial</label><input type="number" id="pvial-${n}" placeholder="e.g. 5000" min="0.01" step="any"></div>
+      <div><label>Dose per injection</label><input type="number" id="pdose-${n}" placeholder="e.g. 250" min="0.01" step="any"></div>
+      <div><label>Volume per dose (units)</label><input type="number" id="punits-${n}" placeholder="e.g. 10" min="1" max="100"></div>
+    </div>`;
+  document.getElementById('peptide-compounds').appendChild(div);
+  createSearchableDropdown(`pep-${n}`, peptideNames, null);
+  if(peptideCount>=5)document.getElementById('add-peptide-btn').style.display='none';
+}
+
+function removePeptide(id){
+  document.getElementById(id)?.remove();
+  peptideCount--;renumberPeptides();
+  document.getElementById('add-peptide-btn').style.display='';
+}
+function renumberPeptides(){
+  document.querySelectorAll('#peptide-compounds .peptide-row').forEach((r,i)=>{ r.querySelector('.row-num').textContent=i+1; });
+}
+
+function calculatePeptide(){
+  const rows=document.querySelectorAll('#peptide-compounds .peptide-row');
+  if(!rows.length){alert('Add at least one peptide.');return;}
+  let html='', err=false; const summary=[]; let totalBacWater=0;
+  rows.forEach(row=>{
+    const nameInput=row.querySelector('input[id^="pep-"]');
+    const vialInput=row.querySelector('input[id^="pvial-"]');
+    const doseInput=row.querySelector('input[id^="pdose-"]');
+    const unitsInput=row.querySelector('input[id^="punits-"]');
+    const freqSel=row.querySelector('select[id^="pfreq-"]');
+    const unitBtn=row.querySelector('.unit-toggle-btn.active');
+    const unit = unitBtn ? unitBtn.dataset.u : 'mcg';
+    if(!nameInput.value||!vialInput.value||!doseInput.value||!unitsInput.value){err=true;return;}
+    const totalDose=parseFloat(vialInput.value);
+    const dose=parseFloat(doseInput.value);
+    const targetUnits=parseFloat(unitsInput.value);
+    const freq=freqOpts[parseInt(freqSel.value)];
+    const bacWaterMl = (totalDose * targetUnits) / (dose * 100);
+    const concPerMl = dose / (targetUnits / 100);
+    const weeklyUse = dose * freq.t;
+    const dailyUse = weeklyUse / 7;
+    const dosesPerVial = totalDose / dose;
+    const vialWeeks = dosesPerVial / freq.t;
+    totalBacWater += bacWaterMl;
+    summary.push({name:nameInput.value, unit, dose, weeklyUse, dailyUse, freq:freq.label, bacWaterMl, dosesPerVial, vialWeeks});
+    html+=`<div class="result-card"><h3>${nameInput.value}</h3>
+      <div class="result-grid">
+        <div class="result-item"><label>Bac water to add</label><div class="val">${bacWaterMl.toFixed(2)}<span class="unit">ml</span></div></div>
+        <div class="result-item"><label>Draw to on syringe</label><div class="val">${targetUnits}<span class="unit">units</span></div></div>
+        <div class="result-item"><label>Per dose</label><div class="val">${dose}<span class="unit">${unit}</span></div></div>
+        <div class="result-item"><label>Concentration</label><div class="val">${concPerMl.toFixed(1)}<span class="unit">${unit}/ml</span></div></div>
+        <div class="result-item"><label>Total use per week</label><div class="val">${weeklyUse.toFixed(1)}<span class="unit">${unit}</span></div></div>
+        <div class="result-item"><label>Doses per vial</label><div class="val">${Math.floor(dosesPerVial)}<span class="unit">doses</span></div></div>
+        <div class="result-item"><label>Vial lasts</label><div class="val">${fmtDuration(vialWeeks)}</div></div>
+        <div class="result-item"><label>Frequency</label><div class="val" style="font-size:12px">${freq.label}</div></div>
+      </div>
+      <div class="syringe-container">${buildSyringeSVG([{units:targetUnits}],'rgba(179,2,0,0.25)',targetUnits.toFixed(1)+'u · '+dose+unit)}</div>
+      ${targetUnits>100?`<div class="warning">Target draw of ${targetUnits} units exceeds a 100-unit (1 ml) syringe. Increase bac water to reduce units per dose, or split the dose.</div>`:''}
+      ${bacWaterMl<0.3?'<div class="warning">Very small reconstitution volume — hard to measure. Consider a higher target injection volume (more units per dose).</div>':''}
+      ${bacWaterMl>10?'<div class="info-note">Large reconstitution volume. Each dose draw will be very small on the syringe.</div>':''}
+    </div>`;
+  });
+  if(err){alert('Fill in all fields for each peptide.');return;}
+  let head=`<button class="calc-btn no-print" onclick="window.print()" style="background:var(--text);margin-bottom:14px">🖨️ Print / Save as PDF</button>`;
+  head+=`<div class="print-title">Flex Success — Peptide Reconstitution · Generated ${new Date().toLocaleDateString()}</div>`;
+  html = head + html;
+  html+=`<div class="summary-card"><h3>📊 Weekly Summary</h3>
+    ${summary.map(s=>`<div class="summary-row"><span class="sr-label">${s.name}</span><span class="sr-val">${s.weeklyUse.toFixed(1)} ${s.unit}/wk · ${s.dailyUse.toFixed(1)} ${s.unit}/day · vial lasts ${fmtDuration(s.vialWeeks)} · ${s.bacWaterMl.toFixed(2)} ml water</span></div>`).join('')}
+    <div class="summary-row" style="border-top:1.5px solid var(--accent);margin-top:8px;padding-top:8px">
+      <span class="sr-label" style="color:var(--accent);font-weight:700">Total bac water across all vials</span>
+      <span class="sr-val" style="color:var(--accent)">${totalBacWater.toFixed(2)} ml</span>
+    </div></div>`;
+  html+=`<div class="info-note" style="margin-top:12px">💧 <strong>Storage:</strong> Most reconstituted peptides stay stable roughly 28–30 days when refrigerated at 2–8°C (some, like reconstituted HGH, less). Keep vials cold, away from light, and discard once cloudy, discoloured, or past the stability window — or follow your specific product's guidance.</div>`;
+  const r=document.getElementById('peptide-results');
+  r.innerHTML=html;r.classList.add('visible');
+  r.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ───────── SERUM LEVELS (PHARMACOKINETICS) ─────────
+const LN2 = Math.log(2);
+
+function getHalfLife(name){
+  if(!name) return null;
+  const c = COMPOUND_LOOKUP.find(x=>x.name===name);
+  if(c) return c.hl;
+  // fuzzy: partial match (e.g. user typed "Testosterone" or "test e")
+  const q = name.toLowerCase();
+  const partial = COMPOUND_LOOKUP.filter(x=>x.name.toLowerCase().includes(q) || q.includes(x.name.toLowerCase()));
+  if(partial.length===1) return partial[0].hl;
+  // generic group fallback: if they typed just a base hormone, average the group
+  const grp = COMPOUND_LOOKUP.filter(x=>x.g.toLowerCase()===q || x.name.toLowerCase().startsWith(q));
+  if(grp.length){
+    const avg = grp.reduce((s,x)=>s+x.hl,0)/grp.length;
+    return Math.round(avg*10)/10;
+  }
+  return null;
+}
+
+// One-compartment, first-order absorption (Bateman) per injection, superposed.
+// Half-life drives terminal elimination; a faster absorption phase smooths the rise.
+// Output is in arbitrary mg-based units (F/V folded to 1).
+function simulateSeries(injections, halfLifeDays, totalDays, dt){
+  const ke = LN2 / halfLifeDays;
+  let absHL = halfLifeDays / 4;
+  absHL = Math.max(0.15, Math.min(absHL, halfLifeDays * 0.9));
+  const ka = LN2 / absHL;
+  const pts = [];
+  const nearlyEqual = Math.abs(ka - ke) < 1e-6;
+  for(let t = 0; t <= totalDays + 1e-9; t += dt){
+    let c = 0;
+    for(const inj of injections){
+      if(inj.t > t) break;
+      const tau = t - inj.t;
+      if(nearlyEqual){
+        c += inj.dose * ke * tau * Math.exp(-ke * tau);
+      } else {
+        c += inj.dose * (ka/(ka-ke)) * (Math.exp(-ke*tau) - Math.exp(-ka*tau));
+      }
+    }
+    pts.push({t, c});
+  }
+  return pts;
+}
+
+function buildInjectionTimes(perInjDose, timesPerWeek, startDay, endDay){
+  const interval = 7 / timesPerWeek;
+  const inj = [];
+  for(let t = startDay; t <= endDay + 1e-9; t += interval){
+    inj.push({t, dose: perInjDose});
+  }
+  return inj;
+}
+
+// Reusable SVG line chart with multiple coloured series + injection markers
+function buildSerumChart(series, totalDays, opts){
+  opts = opts || {};
+  const W = 720, H = 360, padL = 48, padR = 16, padT = 18, padB = 46;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  let yMax = 0;
+  series.forEach(s=>s.points.forEach(p=>{ if(p.c>yMax) yMax=p.c; }));
+  yMax = yMax > 0 ? yMax * 1.1 : 1;
+  const weeks = totalDays / 7;
+  const xToPx = t => padL + (t/totalDays) * plotW;
+  const yToPx = c => padT + plotH - (c/yMax) * plotH;
+
+  // gridlines / x ticks (weekly)
+  let grid = '', xlabels = '';
+  const weekStep = weeks > 16 ? 2 : 1;
+  for(let w=0; w<=Math.ceil(weeks); w+=weekStep){
+    const x = xToPx(w*7);
+    if(x>W-padR+1) break;
+    grid += `<line x1="${x}" y1="${padT}" x2="${x}" y2="${padT+plotH}" stroke="#eceae3" stroke-width="1"/>`;
+    xlabels += `<text x="${x}" y="${padT+plotH+16}" text-anchor="middle" fill="#9e9d97" font-size="10">W${w}</text>`;
+  }
+  // y ticks
+  let ylabels = '';
+  for(let i=0;i<=4;i++){
+    const c = yMax*i/4, y = yToPx(c);
+    grid += `<line x1="${padL}" y1="${y}" x2="${padL+plotW}" y2="${y}" stroke="#eceae3" stroke-width="1"/>`;
+    ylabels += `<text x="${padL-6}" y="${y+3}" text-anchor="end" fill="#9e9d97" font-size="10">${c.toFixed(0)}</text>`;
+  }
+
+  // series polylines + injection dots
+  let lines = '', dots = '';
+  series.forEach(s=>{
+    const pathPts = s.points.map(p=>`${xToPx(p.t).toFixed(1)},${yToPx(p.c).toFixed(1)}`).join(' ');
+    lines += `<polyline points="${pathPts}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round"/>`;
+    if(opts.showInjections && s.injections){
+      s.injections.forEach(it=>{
+        if(it.t>totalDays) return;
+        // value at injection time (find nearest point)
+        const idx = Math.min(s.points.length-1, Math.round(it.t / (totalDays/(s.points.length-1))));
+        const yv = s.points[idx] ? s.points[idx].c : 0;
+        dots += `<circle cx="${xToPx(it.t).toFixed(1)}" cy="${yToPx(yv).toFixed(1)}" r="2.4" fill="${s.color}" stroke="#fff" stroke-width="0.6"/>`;
+      });
+    }
+  });
+
+  // axes
+  const axes = `<line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+plotH}" stroke="#c8c6bc" stroke-width="1"/>
+    <line x1="${padL}" y1="${padT+plotH}" x2="${padL+plotW}" y2="${padT+plotH}" stroke="#c8c6bc" stroke-width="1"/>`;
+
+  // legend
+  const legend = `<div class="syringe-legend" style="margin-top:10px">${series.map(s=>`<span class="legend-item"><span class="legend-dot" style="background:${s.color}"></span>${s.name}</span>`).join('')}</div>`;
+
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">
+    ${grid}${axes}${lines}${dots}${xlabels}${ylabels}
+    <text x="${padL+plotW/2}" y="${H-6}" text-anchor="middle" fill="#6b6a64" font-size="11" font-weight="600">Time (weeks)</text>
+    <text x="12" y="${padT+plotH/2}" text-anchor="middle" fill="#6b6a64" font-size="11" font-weight="600" transform="rotate(-90 12 ${padT+plotH/2})">Relative serum level (arb. units)</text>
+  </svg>${legend}`;
+}
+
+// Pull current compounds from the Oil tab into a working set with half-lives
+function readOilForSerum(){
+  const rows = document.querySelectorAll('#oil-compounds .compound-row');
+  const out = [];
+  rows.forEach((row, idx)=>{
+    const name = row.querySelector('input[id^="cmp-"]').value.trim();
+    const tgt = row.querySelector('input[id^="tgt-"]').value;
+    const frq = row.querySelector('select[id^="freq-"]');
+    if(!name || !tgt) return;
+    const weeklyMg = parseFloat(tgt);
+    const freq = freqOpts[parseInt(frq.value)];
+    const ci = idx % PIN_COLORS.length;
+    out.push({name, weeklyMg, timesPerWeek:freq.t, freqLabel:freq.label, hl:getHalfLife(name), color:PIN_COLORS[ci]});
+  });
+  return out;
+}
+
+// Render the half-life override panel based on current Oil entries
+function refreshSerumPanel(){
+  const set = readOilForSerum();
+  const panel = document.getElementById('serum-halflife-panel');
+  if(!set.length){
+    panel.innerHTML = `<div class="warning">No compounds found. Add and fill in at least one compound on the <strong>Oil / Compound</strong> tab first, then come back here.</div>`;
+    return;
+  }
+  panel.innerHTML = set.map((s,i)=>`
+    <div class="compound-row" style="border-left:4px solid ${s.color}">
+      <div class="field-group" style="grid-template-columns:2fr 1fr 1fr">
+        <div><label>Compound</label><div class="val" style="font-size:13px">${s.name}</div></div>
+        <div><label>Dose</label><div class="val" style="font-size:13px">${s.weeklyMg} mg/wk · ${s.freqLabel}</div></div>
+        <div><label>Half-life (days, editable)</label><input type="number" id="serum-hl-${i}" value="${s.hl!=null?s.hl:''}" placeholder="${s.hl!=null?'':'enter half-life'}" min="0.1" step="any"></div>
+      </div>
+      ${s.hl==null?`<div class="warning">No average on file for "${s.name}" (custom entry) — enter a half-life in days to include it.</div>`:''}
+    </div>`).join('');
+}
+
+function plotInitialExposure(){
+  const set = readOilForSerum();
+  if(!set.length){ alert('Add compounds on the Oil / Compound tab first.'); return; }
+  // gather half-lives (with overrides)
+  const series = [];
+  let maxHL = 0, err = false;
+  set.forEach((s,i)=>{
+    const hlEl = document.getElementById(`serum-hl-${i}`);
+    const hl = hlEl && hlEl.value ? parseFloat(hlEl.value) : s.hl;
+    if(!hl || hl<=0){ err = true; return; }
+    s.hl = hl;
+    if(hl>maxHL) maxHL = hl;
+  });
+  if(err){ alert('One or more compounds need a half-life value. Fill them in (highlighted) and try again.'); return; }
+
+  // duration: ~5 half-lives of slowest compound to approach steady-state peak
+  let totalDays = Math.ceil((5 * maxHL) / 7) * 7;
+  totalDays = Math.max(14, Math.min(totalDays, 120));
+  const dt = Math.max(0.05, totalDays/600);
+
+  set.forEach(s=>{
+    const perInj = s.weeklyMg / s.timesPerWeek;
+    const injections = buildInjectionTimes(perInj, s.timesPerWeek, 0, totalDays);
+    const points = simulateSeries(injections, s.hl, totalDays, dt);
+    series.push({name:`${s.name} (${s.hl}d)`, color:s.color, points, injections});
+  });
+
+  // steady-state estimate: peak & trough over the last cycle
+  const ssRows = series.map((s,idx)=>{
+    const tail = s.points.filter(p=>p.t >= totalDays - Math.max(7, 7/set[idx].timesPerWeek));
+    const peak = Math.max(...tail.map(p=>p.c));
+    const trough = Math.min(...tail.map(p=>p.c));
+    return {name:s.name, peak, trough, color:s.color};
+  });
+
+  let html = `<button class="calc-btn no-print" onclick="window.print()" style="background:var(--text);margin:8px 0 14px">🖨️ Print / Save as PDF</button>`;
+  html += `<div class="print-title">Flex Success — Serum Levels (Initial Exposure) · Generated ${new Date().toLocaleDateString()}</div>`;
+  html += `<div class="result-card"><h3>Initial Exposure — accumulation to steady state</h3>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Charted over ${Math.round(totalDays)} days (${(totalDays/7).toFixed(0)} weeks) — long enough for the slowest compound to approach its steady-state peak. Dots mark each injection.</p>
+    ${buildSerumChart(series, totalDays, {showInjections:true})}
+  </div>`;
+  html += `<div class="summary-card"><h3>📊 Estimated steady-state window (last cycle)</h3>
+    ${ssRows.map(r=>`<div class="summary-row"><span class="sr-label"><span class="legend-dot" style="background:${r.color};margin-right:6px"></span>${r.name}</span><span class="sr-val">peak ≈ ${r.peak.toFixed(0)} · trough ≈ ${r.trough.toFixed(0)} units</span></div>`).join('')}
+  </div>`;
+  html += `<div class="info-note" style="margin-top:12px">Steady state (stable peak/trough) is reached after roughly 4–5 half-lives. Bigger peak-to-trough swings mean a more variable blood level — often smoothed by injecting more frequently. Units are relative per compound and not directly comparable in potency.</div>`;
+
+  const r = document.getElementById('serum-initial-results');
+  r.innerHTML = html;
+  r.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+// ── Manual Cycle Planner ──
+let cycleCount = 0;
+function addCycleBlock(){
+  if(cycleCount>=12) return;
+  cycleCount++;
+  const n = cycleCount;
+  const div = document.createElement('div');
+  div.className = 'compound-row';
+  div.id = `cycle-row-${n}`;
+  div.innerHTML = `
+    <div class="row-header">
+      <span class="row-num">${n}</span>
+      <button class="remove-btn" onclick="removeCycleBlock('cycle-row-${n}')" title="Remove">&times;</button>
+    </div>
+    <div class="field-group" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr">
+      <div><label>Compound</label><input type="text" id="cyc-name-${n}" placeholder="Type or select…" autocomplete="off"></div>
+      <div><label>Total mg added / week</label><input type="number" id="cyc-mg-${n}" placeholder="e.g. 70" min="0.1" step="any"></div>
+      <div><label>Introduced in week</label><input type="number" id="cyc-start-${n}" placeholder="1" min="1" step="1"></div>
+      <div><label>Removed in week (optional)</label><input type="number" id="cyc-end-${n}" placeholder="runs to end" min="1" step="1"></div>
+      <div><label>Injection frequency</label><select id="cyc-freq-${n}">${freqOpts.map((f,i)=>`<option value="${i}">${f.label}</option>`).join('')}</select></div>
+      <div><label>Half-life (days)</label><input type="number" id="cyc-hl-${n}" placeholder="auto" min="0.1" step="any"></div>
+    </div>`;
+  document.getElementById('cycle-blocks').appendChild(div);
+  createSearchableDropdown(`cyc-name-${n}`, COMPOUND_LOOKUP, (c)=>{
+    if(c.hl!=null) document.getElementById(`cyc-hl-${n}`).value = c.hl;
+    // match the frequency of an existing block for the same compound, if any
+    const existing = [...document.querySelectorAll('#cycle-blocks .compound-row')].find(r=>{
+      const nm = r.querySelector('input[id^="cyc-name-"]'); return nm && nm.value.trim()===c.name && nm.id!==`cyc-name-${n}`;
+    });
+    if(existing){ document.getElementById(`cyc-freq-${n}`).value = existing.querySelector('select[id^="cyc-freq-"]').value; }
+    else if(c.g==='Oral'){ // orals default to daily
+      const di = freqOpts.findIndex(f=>f.t===7); if(di>=0) document.getElementById(`cyc-freq-${n}`).value = di;
+    }
+  });
+  if(cycleCount>=12) document.getElementById('add-cycle-btn').style.display='none';
+}
+
+function removeCycleBlock(id){
+  document.getElementById(id)?.remove();
+  cycleCount--;
+  document.querySelectorAll('#cycle-blocks .compound-row').forEach((r,i)=>{ r.querySelector('.row-num').textContent=i+1; });
+  document.getElementById('add-cycle-btn').style.display='';
+}
+
+// Seed the manual planner with whatever is on the Oil / Compound tab (week 1 baseline)
+function pullFromOil(silent){
+  const set = readOilForSerum();
+  if(!set.length){
+    if(!silent) document.getElementById('serum-cycle-results').innerHTML = '<div class="warning">No compounds on the Oil / Compound tab to pull. Add them there first.</div>';
+    return;
+  }
+  document.getElementById('cycle-blocks').innerHTML = '';
+  cycleCount = 0;
+  set.forEach(s=>{
+    addCycleBlock();
+    const n = cycleCount;
+    document.getElementById(`cyc-name-${n}`).value = s.name;
+    document.getElementById(`cyc-mg-${n}`).value = s.weeklyMg;
+    const fi = freqOpts.findIndex(f=>f.t===s.timesPerWeek);
+    if(fi>=0) document.getElementById(`cyc-freq-${n}`).value = fi;
+    document.getElementById(`cyc-start-${n}`).value = 1;
+    const hl = s.hl!=null ? s.hl : getHalfLife(s.name);
+    if(hl) document.getElementById(`cyc-hl-${n}`).value = hl;
+  });
+  document.getElementById('add-cycle-btn').style.display = cycleCount>=12 ? 'none' : '';
+}
+
+function plotManualCycle(){
+  const rows = document.querySelectorAll('#cycle-blocks .compound-row');
+  if(!rows.length){ alert('Add at least one dose block.'); return; }
+  const finalWeekEl = document.getElementById('cycle-final-week');
+  const finalWeek = finalWeekEl ? parseFloat(finalWeekEl.value) : NaN;
+  if(!(finalWeek>0)){
+    document.getElementById('serum-cycle-results').innerHTML = '<div class="warning">Enter a valid cycle final week.</div>';
+    return;
+  }
+  // group blocks by compound name so the same drug stacks into one coloured line
+  const blocks = []; const errors=[]; let maxHL=0;
+  rows.forEach((row, i)=>{
+    const bn = i+1;
+    const name = row.querySelector('input[id^="cyc-name-"]').value.trim();
+    const mgWk = parseFloat(row.querySelector('input[id^="cyc-mg-"]').value);
+    const freq = freqOpts[parseInt(row.querySelector('select[id^="cyc-freq-"]').value)];
+    const startW = parseFloat(row.querySelector('input[id^="cyc-start-"]').value);
+    const endRaw = row.querySelector('input[id^="cyc-end-"]').value;
+    let removedW = endRaw ? parseFloat(endRaw) : finalWeek;
+    let hlRaw = row.querySelector('input[id^="cyc-hl-"]').value;
+    let hl = hlRaw ? parseFloat(hlRaw) : getHalfLife(name);
+    if(!name){ errors.push(`Block ${bn}: enter a compound name.`); return; }
+    if(!(mgWk>0)){ errors.push(`Block ${bn}: enter total mg per week.`); return; }
+    if(!(startW>0)){ errors.push(`Block ${bn}: enter the week it's introduced.`); return; }
+    if(startW>finalWeek){ errors.push(`Block ${bn}: introduced week (${startW}) is after the cycle final week (${finalWeek}).`); return; }
+    if(endRaw && removedW<startW){ errors.push(`Block ${bn}: removed week must be ≥ introduced week.`); return; }
+    if(removedW>finalWeek) removedW = finalWeek; // can't run past cycle end
+    if(!hl||hl<=0){ errors.push(`Block ${bn} ("${name}"): no half-life on file — type one in the Half-life field.`); return; }
+    if(!hlRaw){ const el=row.querySelector('input[id^="cyc-hl-"]'); if(el) el.value = hl; }
+    const perInj = mgWk / freq.t;
+    blocks.push({name, mgWk, perInj, timesPerWeek:freq.t, startDay:(startW-1)*7, endDay:removedW*7, startWeek:startW, endWeek:removedW, hl});
+    if(hl>maxHL) maxHL=hl;
+  });
+  if(errors.length){
+    document.getElementById('serum-cycle-results').innerHTML = `<div class="warning">${errors.join('<br>')}</div>`;
+    return;
+  }
+
+  // total timeline: 6 weeks past the cycle final week so clearance back toward baseline is visible
+  const maxEndDay = finalWeek*7;
+  let totalDays = Math.ceil((maxEndDay + 42)/7)*7;
+  totalDays = Math.min(totalDays, 365);
+  const dt = Math.max(0.05, totalDays/700);
+
+  // merge by compound name+colour (colour by distinct compound)
+  const names = [...new Set(blocks.map(b=>b.name))];
+  const series = names.map((nm,idx)=>{
+    const injs = [];
+    blocks.filter(b=>b.name===nm).forEach(b=>{
+      buildInjectionTimes(b.perInj, b.timesPerWeek, b.startDay, b.endDay).forEach(i=>injs.push(i));
+    });
+    injs.sort((a,b)=>a.t-b.t);
+    const hl = blocks.find(b=>b.name===nm).hl;
+    const points = simulateSeries(injs, hl, totalDays, dt);
+    return {name:`${nm} (${hl}d)`, color:PIN_COLORS[idx%PIN_COLORS.length], points, injections:injs};
+  });
+
+  let html = `<button class="calc-btn no-print" onclick="window.print()" style="background:var(--text);margin:8px 0 14px">🖨️ Print / Save as PDF</button>`;
+  html += `<div class="print-title">Flex Success — Serum Levels (Manual Cycle) · Generated ${new Date().toLocaleDateString()}</div>`;
+  html += `<div class="result-card"><h3>Manual Cycle — full timeline</h3>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Charted over ${(totalDays/7).toFixed(0)} weeks — your full cycle plus 6 weeks post-cycle so you can see levels clear back toward baseline. Dots mark each injection. Overlapping blocks of the same compound are summed.</p>
+    ${buildSerumChart(series, totalDays, {showInjections:true})}
+  </div>`;
+
+  // weekly mg breakdown per compound (shows ramps/ladders clearly)
+  const totalWeeks = Math.ceil(totalDays/7);
+  const wk = {};
+  names.forEach(nm=>{ wk[nm] = new Array(totalWeeks+1).fill(0); });
+  blocks.forEach(b=>{
+    for(let w=b.startWeek; w<=b.endWeek; w++){ if(w>=1 && w<=totalWeeks) wk[b.name][w] += b.mgWk; }
+  });
+  // build compact ranges (consecutive weeks with same dose)
+  function rangesFor(nm){
+    const arr = wk[nm]; const out=[]; let s=null;
+    for(let w=1; w<=totalWeeks; w++){
+      const v = arr[w];
+      if(v>0 && s===null){ s={from:w, dose:v}; }
+      else if(s!==null && (v!==s.dose)){ out.push({from:s.from,to:w-1,dose:s.dose}); s = v>0?{from:w,dose:v}:null; }
+    }
+    if(s!==null) out.push({from:s.from,to:totalWeeks,dose:s.dose});
+    return out;
+  }
+  html += `<div class="summary-card"><h3>📋 Weekly dose schedule</h3>`;
+  names.forEach((nm,idx)=>{
+    const rngs = rangesFor(nm);
+    html += `<div class="summary-row" style="font-weight:700;color:var(--text)"><span class="sr-label"><span class="legend-dot" style="background:${PIN_COLORS[idx%PIN_COLORS.length]};margin-right:6px"></span>${nm}</span><span></span></div>`;
+    rngs.forEach(r=>{
+      const label = r.from===r.to ? `Week ${r.from}` : `Weeks ${r.from}–${r.to}`;
+      html += `<div class="summary-row"><span class="sr-label" style="padding-left:18px">${label}</span><span class="sr-val">${r.dose.toFixed(0)} mg/week</span></div>`;
+    });
+  });
+  html += `</div>`;
+
+  const r = document.getElementById('serum-cycle-results');
+  r.innerHTML = html;
+  r.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function switchTab(tab){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  const map = {oil:0, peptide:1, serum:2};
+  document.querySelectorAll('.tab-btn')[map[tab]].classList.add('active');
+  document.getElementById('tab-'+tab).classList.add('active');
+  if(tab==='serum'){
+    refreshSerumPanel();
+    if(cycleCount===0){
+      const set = readOilForSerum();
+      if(set.length) pullFromOil(true); else addCycleBlock();
+    }
+  }
+}
+
+addCompound();
+addPeptide();
+</script>
+</body>
+</html>
