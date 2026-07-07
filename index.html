@@ -329,6 +329,7 @@ async function doReset(){
 }
 
 async function doLogout(){
+  stopAccessWatch();
   if(sb) await sb.auth.signOut();
   document.getElementById('app-shell').style.display = 'none';
   document.getElementById('auth-gate').style.display = 'flex';
@@ -363,6 +364,65 @@ function enterApp(user){
   const email = user.email || '';
   const name = (user.user_metadata && user.user_metadata.full_name) || '';
   document.getElementById('signed-in-email').textContent = name ? `${name} · ${email}` : email;
+  startAccessWatch();
+}
+let accessWatchTimer = null;
+async function verifyStillAllowed(){
+  if(!sb) return;
+  try {
+    const { data, error } = await sb.auth.getUser();
+    if(error || !data || !data.user){ return; }
+    const flag = data.user.user_metadata ? data.user.user_metadata.active : undefined;
+    const allowed = (ACCESS_MODE === 'open') ? (flag !== false) : (flag === true);
+    if(!allowed){
+      stopAccessWatch();
+      await sb.auth.signOut();
+      document.getElementById('app-shell').style.display = 'none';
+      document.getElementById('auth-gate').style.display = 'flex';
+      document.getElementById('auth-forms').style.display = 'none';
+      document.getElementById('auth-pending').style.display = 'block';
+    }
+  } catch(e){}
+}
+function startAccessWatch(){
+  stopAccessWatch();
+  accessWatchTimer = setInterval(verifyStillAllowed, 180000);
+  document.addEventListener('visibilitychange', onVisibleRecheck);
+}
+function stopAccessWatch(){
+  if(accessWatchTimer){ clearInterval(accessWatchTimer); accessWatchTimer = null; }
+  document.removeEventListener('visibilitychange', onVisibleRecheck);
+}
+function onVisibleRecheck(){ if(document.visibilityState === 'visible') verifyStillAllowed(); }
+}
+let accessWatchTimer = null;
+async function verifyStillAllowed(){
+  if(!sb) return;
+  try {
+    const { data, error } = await sb.auth.getUser();
+    if(error || !data || !data.user){ return; }
+    const flag = data.user.user_metadata ? data.user.user_metadata.active : undefined;
+    const allowed = (ACCESS_MODE === 'open') ? (flag !== false) : (flag === true);
+    if(!allowed){
+      stopAccessWatch();
+      await sb.auth.signOut();
+      document.getElementById('app-shell').style.display = 'none';
+      document.getElementById('auth-gate').style.display = 'flex';
+      document.getElementById('auth-forms').style.display = 'none';
+      document.getElementById('auth-pending').style.display = 'block';
+    }
+  } catch(e){}
+}
+function startAccessWatch(){
+  stopAccessWatch();
+  accessWatchTimer = setInterval(verifyStillAllowed, 180000);
+  document.addEventListener('visibilitychange', onVisibleRecheck);
+}
+function stopAccessWatch(){
+  if(accessWatchTimer){ clearInterval(accessWatchTimer); accessWatchTimer = null; }
+  document.removeEventListener('visibilitychange', onVisibleRecheck);
+}
+function onVisibleRecheck(){ if(document.visibilityState === 'visible') verifyStillAllowed(); }
 }
 
 // On load: if already signed in and active, go straight in
